@@ -1,0 +1,2 @@
+include versioneer.py
+include spack/_version.py
