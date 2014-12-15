@@ -1,45 +1,32 @@
-"""
-Spack
-*****
-
-A 2D or 3D sphere packing analysis package
-------------------------------------------
-
-`Code available`_ on Github.
-
-`Full documentation`_ not yet available at Read the Docs. 
-
-.. _Code available: https://github.com/wackywendell/spack
-
-.. _Full documentation: https://spack.readthedocs.org
-
-Description
------------
-
-Analysis of 2D or 3D spherical packings.
-
-"""
-
-from distutils.core import setup
-from distutils.extension import Extension
-from distutils.command.sdist import sdist as _sdist
-import os.path
+from setuptools import setup
+from codecs import open # To use a consistent encoding
+from os import path
 import versioneer
+
+here = path.abspath(path.dirname(__file__))
+# Get the long description from the relevant file
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'spack/_version.py'
 versioneer.versionfile_build = 'spack/_version.py'
 versioneer.tag_prefix = 'v' # tags are like 1.2.0
 versioneer.parentdir_prefix = 'spack-v' # dirname like 'myproject-1.2.0'
-# create the extension and add it to the python distribution
+
+
 setup(  name='spack', 
+        version=versioneer.get_version(),
+        
+        description = ("A module for analyzing packings of 2D and 3D spheres"),
+        long_description=long_description,
+        
+        url = "https://spack.readthedocs.org",
+        
         author="Wendell Smith",
         author_email="wackywendell@gmail.com",
-        description = ("A module for analyzing packings of 2D and 3D spheres"),
+        
         license = "BSD",
-        keywords = "spheres spherical packing jammed jamming",
-        url = "https://spack.readthedocs.org",
-        long_description=__doc__.strip(),
         classifiers=[
             "Development Status :: 3 - Alpha",
             "Topic :: Scientific/Engineering :: Mathematics",
@@ -50,7 +37,37 @@ setup(  name='spack',
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: BSD License",
         ],
-        version=versioneer.get_version(),
+        
+        keywords = "spheres spherical packing jammed jamming",
+        packages = ['spack'],
+        
         cmdclass=versioneer.get_cmdclass(),
-        )
+        install_requires = [
+            'numpy',
+        ],
+        extras_require = dict(
+            scene=['vapory', 'matplotlib'],
+            trees=['pyparm'],
+        ),
+        
+        # If there are data files included in your packages that need to be
+        # installed, specify them here. If using Python 2.6 or less, then these
+        # have to be included in MANIFEST.in as well.
+        #package_data={
+        #   'sample': ['package_data.dat'],
+        #},
+        # Although 'package_data' is the preferred approach, in some case you may
+        # need to place data files outside of your packages.
+        # see http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files
+        # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
+        #data_files=[('my_data', ['data/data_file'])],
+        # To provide executable scripts, use entry points in preference to the
+        # "scripts" keyword. Entry points provide cross-platform support and allow
+        # pip to create the appropriate form of executable for the target platform.
+        #entry_points={
+        #'console_scripts': [
+        #   'sample=sample:main',
+        #],
+        
+)
 
