@@ -49,7 +49,6 @@ coverage.xml
 
 # Sphinx documentation
 /docs/.build/
-/docs/example-usage.rst
 /docs/example-usage_files
 
 # PyBuilder
