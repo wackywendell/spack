@@ -22,18 +22,21 @@ def rand_disk(d0):
     rad = pow(np.random.rand(d0), 1.0/2.0)
     return (np.array([cos(phi), sin(phi)]) * rad).T
 
-def Vec2_diff(r1, r2, gamma=0.0, Lx = 1.0, Ly = 1.0):
+def Vec2_diff(r1, r2, shear=0.0, Lx = 1.0, Ly = 1.0):
+    """
+    Difference between two points in a 2D box with shear
+    """
     dx,dy = (r1 - r2).T
     im = np.round(dy/Ly)
     dy = dy - im*Ly
-    dx = dx-np.round(dx/Lx-im*gamma)*Lx-im*gamma*Lx
+    dx = dx-np.round(dx/Lx-im*shear)*Lx-im*shear*Lx
     return np.array((dx,dy)).T
 
 class Packing:
-    def __init__(self, rs, diameters, gamma = 0.0, L=1.0):
+    def __init__(self, rs, diameters, shear = 0.0, L=1.0):
         self.rs = np.array(rs) / float(L)
         self.diameters = np.array(diameters) / float(L)
-        self.gamma = gamma
+        self.shear = shear
         self.L = L
         
         self.N = len(self.diameters)
@@ -42,7 +45,7 @@ class Packing:
             raise ValueError("Need shape N for diameters, Nx2 or Nx3 for rs; got {} and {}x{}".format(
                 self.N, n, self.ndim))
         if self.ndim == 3:
-            if self.gamma != 0:
+            if self.shear != 0:
                 raise NotImplementedError("Can't do shearing for 3D")
         elif self.ndim != 2:
             raise ValueError("Number of dimensions must be 2 or 3; got {}".format(self.ndim))
@@ -56,10 +59,10 @@ class Packing:
         """
         diffs = np.remainder(np.array([np.subtract.outer(xs, xs) for xs in self.rs.T])+.5, 1) -.5
         
-        if self.gamma != 0:
+        if self.shear != 0:
             xdiff, ydiff = diffs[:2]
             im = np.round(ydiff)
-            xdiff -= im*self.gamma
+            xdiff -= im*self.shear
             ydiff = ydiff - im
             xdiff -= np.round(xdiff)
             diffs[:2] = xdiff, ydiff
@@ -106,10 +109,10 @@ class Packing:
             
         assert self.ndim == other.ndim
         
-        if self.gamma != 0 or other.gamma != 0:
-            assert np.abs(self.gamma - other.gamma) <= tol
-            gamma = (self.gamma + other.gamma) / 2.0
-            box = sim.LeesEdwardsBox(sim.Vec(1,1), gamma)
+        if self.shear != 0 or other.shear != 0:
+            assert np.abs(self.shear - other.shear) <= tol
+            shear = (self.shear + other.shear) / 2.0
+            box = sim.LeesEdwardsBox(sim.Vec(1,1), shear)
         else:
             box = sim.OriginBox(1.0)
         
