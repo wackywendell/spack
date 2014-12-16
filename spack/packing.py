@@ -30,16 +30,16 @@ def Vec2_diff(r1, r2, gamma=0.0, Lx = 1.0, Ly = 1.0):
     return np.array((dx,dy)).T
 
 class Packing:
-    def __init__(self, rs, sigmas, gamma = 0.0, L=1.0):
+    def __init__(self, rs, diameters, gamma = 0.0, L=1.0):
         self.rs = np.array(rs) / float(L)
-        self.sigmas = np.array(sigmas) / float(L)
+        self.diameters = np.array(diameters) / float(L)
         self.gamma = gamma
         self.L = L
         
-        self.N = len(self.sigmas)
+        self.N = len(self.diameters)
         n, self.ndim = np.shape(self.rs)
         if n != self.N:
-            raise ValueError("Need shape N for sigmas, Nx2 or Nx3 for rs; got {} and {}x{}".format(
+            raise ValueError("Need shape N for diameters, Nx2 or Nx3 for rs; got {} and {}x{}".format(
                 self.N, n, self.ndim))
         if self.ndim == 3:
             if self.gamma != 0:
@@ -49,7 +49,7 @@ class Packing:
     
     def neighbors(self, tol=1e-8):
         """
-        For a set of particles at xs,ys with diameters sigmas, finds the 
+        For a set of particles at xs,ys with diameters diameters, finds the 
         distance vector matrix (d x N x N) and the adjacency matrix.
         
         Assumes box size 1, returns (adjacency matrix, diffs)
@@ -64,7 +64,7 @@ class Packing:
             xdiff -= np.round(xdiff)
             diffs[:2] = xdiff, ydiff
         
-        sigmadists = np.add.outer(self.sigmas, self.sigmas)/2.
+        sigmadists = np.add.outer(self.diameters, self.diameters)/2.
         dists = np.sqrt(np.sum(diffs**2, axis=0))
         
         return dists - sigmadists < tol, diffs*self.L
@@ -91,7 +91,7 @@ class Packing:
     
     def size_indices(self, tol=1e-8):
         """Returns [idx of sigma1, idx of sigma2, ...]"""
-        sigs = np.array(np.round(self.sigmas/tol), dtype=int)
+        sigs = np.array(np.round(self.diameters/tol), dtype=int)
         sigset = set(sigs)
         return [sigs == s for s in sorted(sigset)]
     
@@ -133,10 +133,10 @@ class Packing:
         return sqrt(tree.curbest().distsq)*self.L
         
     @staticmethod
-    def _cage_pts(xyz, neighbor_xyzs, sigma, neighbor_sigmas, L, M, R):
+    def _cage_pts(xyz, neighbor_xyzs, sigma, neighbor_diameters, L, M, R):
         """Finds points within a distance R of point xyz that do not conflict with neigbors"""
         pts = rand_sphere(M)*R + xyz
-        for nxyz, nsig in zip(neighbor_xyzs, neighbor_sigmas):
+        for nxyz, nsig in zip(neighbor_xyzs, neighbor_diameters):
             dpts = np.remainder(pts - nxyz + L/2.0, L) - L/2.0
             dists_sq = np.sum(dpts**2, axis=1)
             goodix = dists_sq >= ((nsig + sigma)/2.0)**2
@@ -172,12 +172,12 @@ class Packing:
                     list corresponding to the points within one cage.
         Vs : The approximate volumes of each cage.
         """
-        if R is None: R = min(self.sigmas) * 0.2
+        if R is None: R = min(self.diameters) * 0.2
         neighbordict = {}
         
         psets = []
         Vs = []
-        for n, (xyz, s) in enumerate(zip(self.rs, self.sigmas)):
+        for n, (xyz, s) in enumerate(zip(self.rs, self.diameters)):
             curR = R
             curpow = -1
             nxyzs = nsigs = None
@@ -194,14 +194,14 @@ class Packing:
                 curR = R * pow(Rfactor, curpow)
                 curM = M
                 if curpow not in neighbordict:
-                    pack = Packing(self.rs, self.sigmas + curR)
+                    pack = Packing(self.rs, self.diameters + curR)
                     cur_neighbors, _ = pack.neighbors(tol=0)
                     cur_neighbors[np.diag_indices_from(cur_neighbors)] = False
                     neighbordict[curpow] = cur_neighbors
                 cur_neighbors = neighbordict[curpow]
                 nix = cur_neighbors[n]
                 nxyzs = self.rs[nix, :]
-                nsigs = self.sigmas[nix]
+                nsigs = self.diameters[nix]
                 pts, maxdist = get_pts()
                 if maxdist * (1. + padding) > curR: continue
             
@@ -243,9 +243,9 @@ class Packing:
         try:
             import matplotlib as mpl
             import matplotlib.cm as mcm
-            vmin, vmax = min(pack.sigmas), max(pack.sigmas)
+            vmin, vmax = min(pack.diameters), max(pack.diameters)
             sm = mcm.ScalarMappable(norm=mpl.colors.Normalize(vmin, vmax), cmap=cmap)
-            cols = [sm.to_rgba(s) for s in pack.sigmas]
+            cols = [sm.to_rgba(s) for s in pack.diameters]
         except ImportError:
             if not isinstance(cmap, list):
                 raise ValueError("matplotlib could not be imported, and cmap not recognizeable as a list")
@@ -262,7 +262,7 @@ class Packing:
         rs = np.remainder(pack.rs+.5, 1)-.5
         spheres = [
             vapory.Sphere(xyz, s/2., vapory.Texture( vapory.Pigment( 'color', col[:3] )))
-            for xyz, s, col in zip(rs, pack.sigmas, cols)
+            for xyz, s, col in zip(rs, pack.diameters, cols)
         ]
 
         extent = (-.5, .5)
@@ -291,7 +291,7 @@ class Packing:
         direction = [-v *2/ mag for v in cloc]
         
         if angle is None:
-            if pad is None: pad = max(pack.sigmas)
+            if pad is None: pad = max(pack.diameters)
             w = sqrt(2) + pad
             angle = float(np.arctan2(w, 2*camera_dist))*2*180/np.pi
         camera = vapory.Camera('location', cloc, 'look_at', [0,0,0], 'angle', angle)
@@ -307,18 +307,18 @@ class Packing:
         ----------
         masses : an array of length N of the masses of the particles.
         """
-        N = len(self.sigmas)
+        N = len(self.diameters)
         rs = self.rs
         d = self.ndim
         M=np.zeros((d*N,d*N))
         
         for i in range(N):
-            sigi = self.sigmas[i]
+            sigi = self.diameters[i]
             for j in range(i):
                 rijvec=rs[i,:]-rs[j,:]
                 rijvec=rijvec-np.around(rijvec)
                 rijsq=np.sum(rijvec**2)
-                dij=(sigi+self.sigmas[j])/2
+                dij=(sigi+self.diameters[j])/2
                 dijsq=dij**2
                 if rijsq < dijsq:
                     rij=np.sqrt(rijsq)
@@ -347,7 +347,7 @@ class Packing:
         
         # TODO: is the mass part of this really part of this?
         marr = np.array(masses)
-        assert np.shape(masses) == np.shape(self.sigmas)
+        assert np.shape(masses) == np.shape(self.diameters)
         marr = np.array([masses]*d)
         marr = marr.T.flatten()
         # marr is now [m1,m1,m2,m2,...] (in 2D)
@@ -367,3 +367,10 @@ class Packing:
         # this used to be over 2pi; I don't know where the 2 went, but it seems to be gone now...
         return np.sqrt(np.abs(ew)) / (np.pi)
 
+    def tess(self):
+        """Get a `tess.Container` instance of this.
+        
+        Requires `tess`.
+        """
+        import tess
+        return tess.Container(self.rs*self.L % self.L, limits=self.L, radii=self.sigmas/2., periodic=True)
