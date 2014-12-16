@@ -1,23 +1,31 @@
 Spack
 *****
 
-A 2D or 3D sphere packing analysis package
-------------------------------------------
+.. image:: https://travis-ci.org/wackywendell/spack.svg?branch=master
+    :target: https://travis-ci.org/wackywendell/spack
+    :alt: Build Status
+
+.. image:: https://readthedocs.org/projects/spack/badge/?version=latest
+    :target: https://spack.readthedocs.org
+    :alt: Documentation
 
 `Code available`_ on Github.
 
-`Full documentation`_ not yet available at Read the Docs. 
+`Full documentation`_ at Read the Docs. 
 
 .. _Code available: https://github.com/wackywendell/spack
 
 .. _Full documentation: https://spack.readthedocs.org
 
+A 2D or 3D sphere packing analysis package
+------------------------------------------
+
 This package exists to enable fast, simple, and easy analysis of packings of spheres (3D) and
 disks (2D). It was developed for use in a Granular Materials lab, so some of the methods reflect 
 that.
 
-Example
--------
+Example Usage
+-------------
 
 Make a packing:
 
@@ -63,8 +71,14 @@ What does it look like? (requires `vapory` package and `povray` program)
 Colors indicate diameter, with floaters drawn in gray.
 
 .. image:: example-packing.png
+    :align: center
+    :alt: 
+.. image:: docs/example-packing.png
+    :align: center
+    :alt: 
 
 Let's look at all sides, using `moviepy`:
+
     >>> from moviepy.editor import VideoClip
     >>> import moviepy.editor as mpy
     >>> 
@@ -82,3 +96,8 @@ Let's look at all sides, using `moviepy`:
 And this is the output:
 
 .. image:: example-packing.gif
+    :align: center
+    :alt: 
+.. image:: docs/example-packing.gif
+    :align: center
+    :alt: 
