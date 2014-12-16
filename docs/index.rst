@@ -7,6 +7,8 @@ Full Contents
     :maxdepth: 3
    
     self
+
+    example-usage
     
     api
 
