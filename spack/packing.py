@@ -33,6 +33,9 @@ def Vec2_diff(r1, r2, shear=0.0, Lx = 1.0, Ly = 1.0):
     return np.array((dx,dy)).T
 
 class Packing:
+    """
+    A class representing a packing of spheres in a periodic box.
+    """
     def __init__(self, rs, diameters, shear = 0.0, L=1.0):
         self.rs = np.array(rs) / float(L)
         self.diameters = np.array(diameters) / float(L)
@@ -99,9 +102,11 @@ class Packing:
         return [sigs == s for s in sorted(sigset)]
     
     def dist_tree(self, other, tol=1e-8):
-        """Find the distance between two packings.
+        """
+        Find the distance between two packings.
         
-        Requires pyparm."""
+        Requires pyparm.
+        """
         if self.ndim == 2:
             from pyparm import d2 as sim
         else:
@@ -226,7 +231,8 @@ class Packing:
         return psets**self.L, np.array(Vs)*(self.L**self.ndim)
     
     def scene(pack, cmap=None, rot=0, camera_height = 0.7,  camera_dist = 1.5, angle=None, 
-            lightstrength = 1.1, orthographic=False, pad=None, floatercolor=(.6,.6,.6)):
+            lightstrength = 1.1, orthographic=False, pad=None, floatercolor=(.6,.6,.6),
+            bgcolor = [1,1,1]):
         """
         Render a scene.
         
@@ -300,7 +306,7 @@ class Packing:
         camera = vapory.Camera('location', cloc, 'look_at', [0,0,0], 'angle', angle)
         # vapory.Camera('orthographic', 'location', cloc, 'direction', direction, 'up', [0,2,0], 'right', [2,0,0])
          
-        return vapory.Scene( camera, objects= lights + spheres + cyls + caps + [vapory.Background( "color", [1,1,1] )])
+        return vapory.Scene( camera, objects= lights + spheres + cyls + caps + [vapory.Background( "color", bgcolor )])
     
     def DM(self, masses=None):
         """Dynamical matrix for array rs, size ds. Assumes epsilon is the

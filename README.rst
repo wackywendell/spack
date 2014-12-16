@@ -12,8 +12,73 @@ A 2D or 3D sphere packing analysis package
 
 .. _Full documentation: https://spack.readthedocs.org
 
-Description
------------
+This package exists to enable fast, simple, and easy analysis of packings of spheres (3D) and
+disks (2D). It was developed for use in a Granular Materials lab, so some of the methods reflect 
+that.
 
-Analysis of 2D or 3D spherical packings.
+Example
+-------
 
+Make a packing:
+
+    >>> from spack import Packing
+    >>> from numpy import array, pi
+    >>> L = 2.0066668050219723
+    >>> diameters = array([ 0.96,  0.97,  0.98,  0.99,  1.  ,  1.01,  1.02,  1.03,  1.04])
+    >>> locs = array([[ 1.40776762,  1.26647724,  0.73389219],
+    ...                [ 0.58704249,  2.11399   ,  1.52956579],
+    ...                [ 1.75917911,  0.54290089,  1.27577478],
+    ...                [ 2.13750384,  0.87508242,  0.21938647],
+    ...                [ 1.07283961,  0.87692084,  1.9060841 ],
+    ...                [ 0.09550267,  1.94404465,  0.56463369],
+    ...                [ 1.07636871,  2.1942971 ,  0.63752152],
+    ...                [ 0.49922725,  1.20002224,  1.13360082],
+    ...                [-0.27724757,  1.62152603,  1.67262247]])
+    >>> pack = Packing(locs, diameters, L=L)
+
+How many contacts are in my packing?
+
+    >>> pack.contacts()
+    (25, 25, 0)
+    >>> # 25 contacts found
+    >>> # 25 contacts required for stability (for a packing of 9 particles)
+    >>> # 0 floaters
+
+What are its highest resonant frequencies?
+    
+    >>> freqs = pack.DM_freqs()
+    >>> for f in reversed(sorted(freqs)[-4:]):
+    ...     print('{:.4f}'.format(f))
+    0.7018
+    0.6717
+    0.6416
+    0.6375
+
+What does it look like? (requires `vapory` package and `povray` program)
+
+    >>> size = 400
+    >>> sc = pack.scene(rot=pi/4, camera_dist=2, cmap='autumn')
+    >>> sc.render('example-packing.png', width=size, height=size, antialiasing=0.0001)
+
+Colors indicate diameter, with floaters drawn in gray.
+
+.. image:: example-packing.png
+
+Let's look at all sides, using `moviepy`:
+    >>> from moviepy.editor import VideoClip
+    >>> import moviepy.editor as mpy
+    >>> 
+    >>> duration = 10
+    >>> def make_frame(t):
+    ...     return (
+    ...                 pack.scene(rot=(t/duration + .125)*2.*pi, 
+    ...                            camera_dist=2, cmap='autumn', bgcolor=[1,1,1])
+    ...                 .render(width=size, height=size, antialiasing=0.001)
+    ...             )
+    >>> vc = VideoClip(make_frame, duration=duration)
+    >>> 
+    >>> vc.write_gif("example-packing.gif",fps=24) # doctest: +SKIP
+
+And this is the output:
+
+.. image:: example-packing.gif

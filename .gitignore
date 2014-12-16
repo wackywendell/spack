@@ -57,6 +57,6 @@ target/
 /bin
 /include
 
-/.ipynb_checkpoints
+.ipynb_checkpoints
 
 *test*.ipynb
