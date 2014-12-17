@@ -1,3 +1,20 @@
+"""
+spack
+*****
+
+`Code available`_ on Github, and `documentation`_ at Read the Docs. 
+
+.. _Code available: https://github.com/wackywendell/spack
+
+.. _documentation: https://spack.readthedocs.org
+
+A 2D or 3D sphere packing analysis package
+------------------------------------------
+
+This package exists to enable fast, simple, and easy analysis of packings of spheres (3D) and
+disks (2D). 
+"""
+
 from setuptools import setup
 from codecs import open # To use a consistent encoding
 from os import path
@@ -7,9 +24,6 @@ import versioneer
 
 here = path.abspath(path.dirname(__file__))
 # Get the long description from the relevant file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
-
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'spack/_version.py'
 versioneer.versionfile_build = 'spack/_version.py'
@@ -21,7 +35,7 @@ setup(  name='spack',
         version=versioneer.get_version(),
         
         description = ("A module for analyzing packings of 2D and 3D spheres"),
-        long_description=long_description,
+        long_description=__doc__.strip(),
         
         url = "https://spack.readthedocs.org",
         
@@ -48,6 +62,7 @@ setup(  name='spack',
             'numpy',
         ],
         extras_require = dict(
+            voro=['tess'],
             scene=['vapory', 'matplotlib'],
             trees=['pyparm'],
         ),
