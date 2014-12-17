@@ -1,6 +1,8 @@
 from setuptools import setup
 from codecs import open # To use a consistent encoding
 from os import path
+import os
+del os.link
 import versioneer
 
 here = path.abspath(path.dirname(__file__))
