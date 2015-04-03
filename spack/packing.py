@@ -55,7 +55,7 @@ class Packing:
     
     def neighbors(self, tol=1e-8):
         """
-        For a set of particles at xs,ys with diameters diameters, finds the 
+        For a set of particles at xs,ys with diameters diameters, finds the
         distance vector matrix (d x N x N) and the adjacency matrix.
         
         Assumes box size 1, returns (adjacency matrix, diffs)
@@ -153,7 +153,7 @@ class Packing:
 
     def cages(self, M=10000, R=None, Rfactor = 1.2, padding=0.1, Mfactor=0.1):
         """
-        Find all cages in the current "packing". 
+        Find all cages in the current "packing".
         
         The algorithm uses Monte Carlo: it finds M random points within a sphere of radius R from
         each particle, and sees if that particle could sit there without conflicting with other particles.
@@ -169,14 +169,14 @@ class Packing:
         M : Number of points in the sphere to test
         R : Size of sphere to test (will be expanded if necessary)
         Rfactor : How much to increase R by when the cage doesn't fit
-        padding : How much larger the sphere should be than the cage (if it isn't, the sphere is 
+        padding : How much larger the sphere should be than the cage (if it isn't, the sphere is
                     expanded)
-        Mfactor : Mfactor * M is the minimum number of points to find per cage. If they aren't 
+        Mfactor : Mfactor * M is the minimum number of points to find per cage. If they aren't
                     found, more points are tested.
         
         Returns
         -------
-        points : a list of (A x 3) lists, A indeterminate (but larger than M * Mfactor), with each 
+        points : a list of (A x 3) lists, A indeterminate (but larger than M * Mfactor), with each
                     list corresponding to the points within one cage.
         Vs : The approximate volumes of each cage.
         """
@@ -230,17 +230,17 @@ class Packing:
             Vs.append(V)
         return psets**self.L, np.array(Vs)*(self.L**self.ndim)
     
-    def scene(pack, cmap=None, rot=0, camera_height = 0.7,  camera_dist = 1.5, angle=None, 
+    def scene(pack, cmap=None, rot=0, camera_height = 0.7,  camera_dist = 1.5, angle=None,
             lightstrength = 1.1, orthographic=False, pad=None, floatercolor=(.6,.6,.6),
             bgcolor = [1,1,1]):
         """
-        Render a scene.
+        Render a 3D scene.
         
         Requires `vapory` package, which requires the `povray` binary.
         
         Parameters
         ----------
-        cmap : a colormap 
+        cmap : a colormap
         
         Returns
         -------
@@ -308,6 +308,78 @@ class Packing:
          
         return vapory.Scene( camera, objects= lights + spheres + cyls + caps + [vapory.Background( "color", bgcolor )])
     
+    def plot_disks(self, ax=None, color=None, alpha=0.4, reshape=True):
+        """
+        Plot the packing as a set of disks.
+        
+        Color can be None (uses the standard sets), 'diameter' (colors by diameter), or a list of colors.
+        
+        'reshape' means set axis scaled, etc.
+        """
+        import matplotlib as mpl
+        from itertools import cycle
+        import numpy as np
+        
+        if color == 'diameter':
+            dset = sorted(set(self.diameters))
+            cold = dict(zip(dset, cycle(mpl.rcParams['axes.color_cycle'])))
+            color = [cold[d] for d in self.diameters]
+        if not np.iterable(color):
+            color = cycle((color,))
+            
+        if ax is None: ax = mpl.pyplot.gca()
+        
+        rs = np.remainder(self.rs+.5, 1)-.5
+        L = self.L
+        dloc = (0, 1)
+        for (x0,y0),d,c in zip(self.rs, self.diameters, color):
+            for x,y in [np.array((x0+dx,y0+dy)) for dx in dloc for dy in dloc]:
+                if (x + d > 0 and x - d < 1 and y + d > 0 and y - d < 1):
+                    circ = mpl.patches.Circle((x*L,y*L), d*L/2, axes=ax, ec='none', fc=c, alpha=alpha)
+                    ax.add_patch(circ)
+        
+        if reshape:
+            ax.axis([0,L,0,L])
+            ax.set_aspect('equal')
+            ax.set_xticks([],[])
+            ax.set_yticks([],[])
+    
+    def plot_contacts(self, ax=None, tol=0, reshape=True, **kw):
+        """Designed for use with plot_disks, this will plot a line between neighboring particles."""
+        import matplotlib as mpl
+        import numpy as np
+        
+        if ax is None: ax = mpl.pyplot.gca()
+        
+        kw.setdefault('color', 'k')
+        kw.setdefault('alpha', 0.4)
+        
+        adj, diffs = self.neighbors(tol=tol)
+        
+        for i, (adjrow, drow) in enumerate(zip(adj, diffs.T)):
+            for j, (a, d) in enumerate(zip(adjrow, drow)):
+                if not a: continue
+                
+                ri = np.remainder(self.rs[i], 1)
+                x,y = ri
+                rid = ri + d
+                
+                if i < j and max(abs(rid*2 - 1)) < 1:
+                    # if we're going to get to (j,i) later
+                    # and both points are in the box, skip it this time
+                    continue
+                x2,y2 = rid
+                
+                x,y = ri*self.L
+                x2,y2 = rid*self.L
+                ax.plot([x,x2], [y,y2], **kw)
+        
+        if reshape:
+            ax.axis([0,self.L,0,self.L])
+            ax.set_aspect('equal')
+            ax.set_xticks([],[])
+            ax.set_yticks([],[])
+                
     def DM(self, masses=None):
         """Dynamical matrix for array rs, size ds. Assumes epsilon is the
         same for all.
@@ -332,7 +404,7 @@ class Packing:
                 if rijsq < dijsq:
                     rij=np.sqrt(rijsq)
                     rijouter = np.outer(rijvec,rijvec)
-                    # U(r) = ½(1 - r/d)²	
+                    # U(r) = ½(1 - r/d)²
                     # d²U/dxdy = (dr/dx)(dr/dy)/d² - (1 - r/d)(d²r/dxdy)/d
                     # dr/dx = x/r
                     # d²r/dxdy = -(x y) / r³
@@ -375,7 +447,26 @@ class Packing:
         ew, ev = np.linalg.eig(self.DM(masses=masses))
         # this used to be over 2pi; I don't know where the 2 went, but it seems to be gone now...
         return np.sqrt(np.abs(ew)) / (np.pi)
+    
+    def forces(self):
+        """Find Fij on each particle, assuming a harmonic potential, U = 1/2 (1 - r/σ)^2
+        
+        Returns a dxNxN matrix."""
+        adj, diffs = self.neighbors(tol=0)
+        
+        dists = np.sqrt(np.sum(diffs**2, axis=0))
+        sigij = np.add.outer(self.diameters, self.diameters)/2.
 
+        adj2 = np.triu(adj, k=1)
+        overlaps = (sigij - dists)[adj2]
+        
+        dr = (1 - dists / sigij)
+        with np.errstate(divide='ignore'):
+            Fmags = dr / sigij / dists
+        Fmags[~adj] = 0
+        Fmags[np.diag_indices_from(Fmags)] = 0
+        return diffs * Fmags / self.L
+    
     def tess(self):
         """Get a `tess.Container` instance of this.
         
