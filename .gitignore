@@ -20,6 +20,7 @@ sdist/
 var/
 *.egg-info/
 .installed.cfg
+/MANIFEST
 *.egg
 
 # PyInstaller

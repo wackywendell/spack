@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 
-import sys, os.path
 import numpy as np
 from math import sqrt
+
 
 def rand_sphere(d0):
     """
@@ -14,29 +14,32 @@ def rand_sphere(d0):
     rad = pow(np.random.rand(d0), 1.0/3.0)
     return (p1.T * (rad/m)).T
 
+
 def rand_disk(d0):
     """
     Get random points within a disk of radius 1. Returns array of shape (d0, 2).
     """
     phi = np.random.rand(d0)*(2*np.pi)
     rad = pow(np.random.rand(d0), 1.0/2.0)
-    return (np.array([cos(phi), sin(phi)]) * rad).T
+    return (np.array([np.cos(phi), np.sin(phi)]) * rad).T
 
-def Vec2_diff(r1, r2, shear=0.0, Lx = 1.0, Ly = 1.0):
+
+def Vec2_diff(r1, r2, shear=0.0, Lx=1.0, Ly=1.0):
     """
     Difference between two points in a 2D box with shear
     """
-    dx,dy = (r1 - r2).T
+    dx, dy = (r1 - r2).T
     im = np.round(dy/Ly)
     dy = dy - im*Ly
     dx = dx-np.round(dx/Lx-im*shear)*Lx-im*shear*Lx
-    return np.array((dx,dy)).T
+    return np.array((dx, dy)).T
+
 
 class Packing:
     """
     A class representing a packing of spheres in a periodic box.
     """
-    def __init__(self, rs, diameters, shear = 0.0, L=1.0):
+    def __init__(self, rs, diameters, shear=0.0, L=1.0):
         self.rs = np.array(rs) / float(L)
         self.diameters = np.array(diameters) / float(L)
         self.shear = shear
@@ -45,8 +48,9 @@ class Packing:
         self.N = len(self.diameters)
         n, self.ndim = np.shape(self.rs)
         if n != self.N:
-            raise ValueError("Need shape N for diameters, Nx2 or Nx3 for rs; got {} and {}x{}".format(
-                self.N, n, self.ndim))
+            raise ValueError(
+                "Need shape N for diameters, Nx2 or Nx3 for rs; got {} and {}x{}".format(
+                    self.N, n, self.ndim))
         if self.ndim == 3:
             if self.shear != 0:
                 raise NotImplementedError("Can't do shearing for 3D")
@@ -60,7 +64,7 @@ class Packing:
         
         Assumes box size 1, returns (adjacency matrix, diffs)
         """
-        diffs = np.remainder(np.array([np.subtract.outer(xs, xs) for xs in self.rs.T])+.5, 1) -.5
+        diffs = np.remainder(np.array([np.subtract.outer(xs, xs) for xs in self.rs.T])+.5, 1) - .5
         
         if self.shear != 0:
             xdiff, ydiff = diffs[:2]
@@ -78,7 +82,9 @@ class Packing:
     def backbone(self, tol=1e-8):
         """Returns (backbone indices, neighbor matrix)"""
         areneighbors, _ = self.neighbors(tol)
-        notfloaters = np.sum(areneighbors, axis=0) >= self.ndim + 2 # self.ndim + 1 for stability, +1 for itself
+        
+        # self.ndim + 1 for stability, +1 for itself
+        notfloaters = np.sum(areneighbors, axis=0) >= self.ndim + 2
         
         oldNpack = -1
         Npack = np.sum(notfloaters)
@@ -117,7 +123,7 @@ class Packing:
         if self.shear != 0 or other.shear != 0:
             assert np.abs(self.shear - other.shear) <= tol
             shear = (self.shear + other.shear) / 2.0
-            box = sim.LeesEdwardsBox(sim.Vec(1,1), shear)
+            box = sim.LeesEdwardsBox(sim.Vec(1, 1), shear)
         else:
             box = sim.OriginBox(1.0)
         
@@ -135,7 +141,7 @@ class Packing:
         tree = sim.jammingtreeBD(box, sim.vecvector(vs1), sim.vecvector(vs2), cutoff1, cutoff2)
         return tree
     
-    def dist(self, other, tol=1e-8, maxt = 1000000):
+    def dist(self, other, tol=1e-8, maxt=1000000):
         tree = self.dist_tree(other, tol=tol)
         tree.expand(maxt)
         return sqrt(tree.curbest().distsq)*self.L
@@ -151,18 +157,18 @@ class Packing:
             pts = pts[goodix, :]
         return pts
 
-    def cages(self, M=10000, R=None, Rfactor = 1.2, padding=0.1, Mfactor=0.1):
+    def cages(self, M=10000, R=None, Rfactor=1.2, padding=0.1, Mfactor=0.1):
         """
         Find all cages in the current "packing".
         
         The algorithm uses Monte Carlo: it finds M random points within a sphere of radius R from
-        each particle, and sees if that particle could sit there without conflicting with other particles.
-        Then (number of accepted points) / (number of test points) * (volume of sphere) is the
-        volume of the cage.
+        each particle, and sees if that particle could sit there without conflicting with other
+        particles. Then (number of accepted points) / (number of test points) * (volume of sphere)
+        is the volume of the cage.
         
-        The algorithm is adaptive: if not enough test points are accepted (n < M * Mfactor), it tries
-        more test points. If any test points are within `padding` of the edge, `R` is (temporarily)
-        expanded.
+        The algorithm is adaptive: if not enough test points are accepted (n < M * Mfactor), it
+        tries more test points. If any test points are within `padding` of the edge, `R` is
+        (temporarily) expanded.
         
         Parameters
         ----------
@@ -180,7 +186,8 @@ class Packing:
                     list corresponding to the points within one cage.
         Vs : The approximate volumes of each cage.
         """
-        if R is None: R = min(self.diameters) * 0.2
+        if R is None:
+            R = min(self.diameters) * 0.2
         neighbordict = {}
         
         psets = []
@@ -211,7 +218,8 @@ class Packing:
                 nxyzs = self.rs[nix, :]
                 nsigs = self.diameters[nix]
                 pts, maxdist = get_pts()
-                if maxdist * (1. + padding) > curR: continue
+                if maxdist * (1. + padding) > curR:
+                    continue
             
                 while len(pts) < Mfactor * M:
                     # print(curM, len(pts), Mfactor * M, len(pts) < Mfactor * M)
@@ -219,20 +227,21 @@ class Packing:
                     maxdist = max((maxdist, maxdist2))
                     pts = np.concatenate((pts, pts2))
                     curM += M
-                    if maxdist * (1. + padding) > curR: break
+                    if maxdist * (1. + padding) > curR:
+                        break
                 if maxdist > 0.5:
                     raise ValueError('Cage size filling entire space, cannot continue.')
             
             fracgood = len(pts) / curM
-            r = fracgood**(1./3.) * curR
+            # r = fracgood**(1./3.) * curR
             V = fracgood * 4 * np.pi / 3 * (curR**3)
             psets.append(pts)
             Vs.append(V)
         return psets**self.L, np.array(Vs)*(self.L**self.ndim)
     
-    def scene(pack, cmap=None, rot=0, camera_height = 0.7,  camera_dist = 1.5, angle=None,
-            lightstrength = 1.1, orthographic=False, pad=None, floatercolor=(.6,.6,.6),
-            bgcolor = [1,1,1]):
+    def scene(pack, cmap=None, rot=0, camera_height=0.7, camera_dist=1.5, angle=None,
+              lightstrength=1.1, orthographic=False, pad=None, floatercolor=(.6, .6, .6),
+              bgcolor=[1, 1, 1]):
         """
         Render a 3D scene.
         
@@ -257,62 +266,73 @@ class Packing:
             cols = [sm.to_rgba(s) for s in pack.diameters]
         except ImportError:
             if not isinstance(cmap, list):
-                raise ValueError("matplotlib could not be imported, and cmap not recognizeable as a list")
+                raise ValueError(
+                    "matplotlib could not be imported, and cmap not recognizeable as a list")
             cols = list(cmap)
         except TypeError:
             if not isinstance(cmap, list):
-                raise ValueError("matplotlib could not convert cmap to a colormap, and cmap not recognizeable as a list")
+                raise ValueError("matplotlib could not convert cmap to a colormap," +
+                                 " and cmap not recognizeable as a list")
             cols = list(cmap)
 
         if floatercolor is not None:
             ix, _ = pack.backbone()
             ns, = np.nonzero(~ix)
-            for n in ns: cols[n] = floatercolor
+            for n in ns:
+                cols[n] = floatercolor
         rs = np.remainder(pack.rs+.5, 1)-.5
         spheres = [
-            vapory.Sphere(xyz, s/2., vapory.Texture( vapory.Pigment( 'color', col[:3] )))
+            vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
             for xyz, s, col in zip(rs, pack.diameters, cols)
-        ]
+            ]
 
         extent = (-.5, .5)
-        corners = [np.array((x,y,z)) for x in extent for y in extent for z in extent]
-        pairs = [(c1, c2) for c1 in corners for c2 in corners if np.allclose(np.sum((c1-c2)**2), 1) and sum(c1-c2) > 0]
+        corners = [np.array((x, y, z)) for x in extent for y in extent for z in extent]
+        pairs = [(c1, c2)
+                 for c1 in corners
+                 for c2 in corners
+                 if np.allclose(np.sum((c1-c2)**2), 1) and sum(c1-c2) > 0]
 
         radius = 0.01
-        col = vapory.Texture( vapory.Pigment( 'color', [.5,.5,.5]))
-        cyls = [vapory.Cylinder(c1, c2, 0.01, col) for c1,c2 in pairs]
+        col = vapory.Texture(vapory.Pigment('color', [.5, .5, .5]))
+        cyls = [vapory.Cylinder(c1, c2, 0.01, col) for c1, c2 in pairs]
         caps = [vapory.Sphere(c, radius, col) for c in corners]
         
-        
         light_locs = [
-            [ 8.,  5., -3.],
-            [-6.,  6., -5.],
+            [8., 5., -3.],
+            [-6., 6., -5.],
             [-6., -7., -4.],
-            [ 10., -5., 7.]
-        ]
-        rotlocs = [[x*np.cos(rot) - z*np.sin(rot),y, z*np.cos(rot) + x*np.sin(rot)] for x,y,z in light_locs]
+            [10., -5., 7.]
+            ]
+        
+        rotlocs = [[x*np.cos(rot) - z*np.sin(rot), y, z*np.cos(rot) + x*np.sin(rot)]
+                   for x, y, z in light_locs]
         lights = [
-            #vapory.LightSource( [2,3,5], 'color', [1,1,1] ),
-            vapory.LightSource(loc, 'color', [lightstrength]*3 ) for loc in rotlocs
-        ]
-        cloc = [np.cos(rot)*camera_dist,camera_dist*camera_height,np.sin(rot)*camera_dist]
-        mag = sqrt(sum([d**2 for d in cloc]))
-        direction = [-v *2/ mag for v in cloc]
+            # vapory.LightSource( [2,3,5], 'color', [1,1,1] ),
+            vapory.LightSource(loc, 'color', [lightstrength]*3) for loc in rotlocs
+            ]
+        cloc = [np.cos(rot)*camera_dist, camera_dist*camera_height, np.sin(rot)*camera_dist]
+        # mag = sqrt(sum([d**2 for d in cloc]))
+        # direction = [-v*2/mag for v in cloc]
         
         if angle is None:
-            if pad is None: pad = max(pack.diameters)
+            if pad is None:
+                pad = max(pack.diameters)
             w = sqrt(2) + pad
             angle = float(np.arctan2(w, 2*camera_dist))*2*180/np.pi
-        camera = vapory.Camera('location', cloc, 'look_at', [0,0,0], 'angle', angle)
-        # vapory.Camera('orthographic', 'location', cloc, 'direction', direction, 'up', [0,2,0], 'right', [2,0,0])
+        camera = vapory.Camera('location', cloc, 'look_at', [0, 0, 0], 'angle', angle)
+        # vapory.Camera('orthographic', 'location', cloc, 'direction',
+        #               direction, 'up', [0,2,0], 'right', [2,0,0])
          
-        return vapory.Scene( camera, objects= lights + spheres + cyls + caps + [vapory.Background( "color", bgcolor )])
+        return vapory.Scene(camera, objects=(lights + spheres + cyls + caps +
+                                             [vapory.Background("color", bgcolor)]))
     
     def plot_disks(self, ax=None, color=None, alpha=0.4, reshape=True):
         """
         Plot the packing as a set of disks.
         
-        Color can be None (uses the standard sets), 'diameter' (colors by diameter), or a list of colors.
+        Color can be None (uses the standard sets), 'diameter' (colors by diameter), or a list of
+        colors.
         
         'reshape' means set axis scaled, etc.
         """
@@ -327,29 +347,32 @@ class Packing:
         if not np.iterable(color):
             color = cycle((color,))
             
-        if ax is None: ax = mpl.pyplot.gca()
+        if ax is None:
+            ax = mpl.pyplot.gca()
         
-        rs = np.remainder(self.rs+.5, 1)-.5
+        # rs = np.remainder(self.rs+.5, 1)-.5
         L = self.L
         dloc = (0, 1)
-        for (x0,y0),d,c in zip(self.rs, self.diameters, color):
-            for x,y in [np.array((x0+dx,y0+dy)) for dx in dloc for dy in dloc]:
+        for (x0, y0), d, c in zip(self.rs, self.diameters, color):
+            for x, y in [np.array((x0+dx, y0+dy)) for dx in dloc for dy in dloc]:
                 if (x + d > 0 and x - d < 1 and y + d > 0 and y - d < 1):
-                    circ = mpl.patches.Circle((x*L,y*L), d*L/2, axes=ax, ec='none', fc=c, alpha=alpha)
+                    circ = mpl.patches.Circle((x*L, y*L), d*L/2,
+                                              axes=ax, ec='none', fc=c, alpha=alpha)
                     ax.add_patch(circ)
         
         if reshape:
-            ax.axis([0,L,0,L])
+            ax.axis([0, L, 0, L])
             ax.set_aspect('equal')
-            ax.set_xticks([],[])
-            ax.set_yticks([],[])
+            ax.set_xticks([], [])
+            ax.set_yticks([], [])
     
     def plot_contacts(self, ax=None, tol=0, reshape=True, **kw):
         """Designed for use with plot_disks, this will plot a line between neighboring particles."""
         import matplotlib as mpl
         import numpy as np
         
-        if ax is None: ax = mpl.pyplot.gca()
+        if ax is None:
+            ax = mpl.pyplot.gca()
         
         kw.setdefault('color', 'k')
         kw.setdefault('alpha', 0.4)
@@ -358,27 +381,28 @@ class Packing:
         
         for i, (adjrow, drow) in enumerate(zip(adj, diffs.T)):
             for j, (a, d) in enumerate(zip(adjrow, drow)):
-                if not a: continue
+                if not a:
+                    continue
                 
                 ri = np.remainder(self.rs[i], 1)
-                x,y = ri
+                x, y = ri
                 rid = ri + d
                 
                 if i < j and max(abs(rid*2 - 1)) < 1:
                     # if we're going to get to (j,i) later
                     # and both points are in the box, skip it this time
                     continue
-                x2,y2 = rid
+                x2, y2 = rid
                 
-                x,y = ri*self.L
-                x2,y2 = rid*self.L
-                ax.plot([x,x2], [y,y2], **kw)
+                x, y = ri*self.L
+                x2, y2 = rid*self.L
+                ax.plot([x, x2], [y, y2], **kw)
         
         if reshape:
-            ax.axis([0,self.L,0,self.L])
+            ax.axis([0, self.L, 0, self.L])
             ax.set_aspect('equal')
-            ax.set_xticks([],[])
-            ax.set_yticks([],[])
+            ax.set_xticks([], [])
+            ax.set_yticks([], [])
                 
     def DM(self, masses=None):
         """Dynamical matrix for array rs, size ds. Assumes epsilon is the
@@ -391,19 +415,19 @@ class Packing:
         N = len(self.diameters)
         rs = self.rs
         d = self.ndim
-        M=np.zeros((d*N,d*N))
+        M = np.zeros((d*N, d*N))
         
         for i in range(N):
             sigi = self.diameters[i]
             for j in range(i):
-                rijvec=rs[i,:]-rs[j,:]
-                rijvec=rijvec-np.around(rijvec)
-                rijsq=np.sum(rijvec**2)
-                dij=(sigi+self.diameters[j])/2
-                dijsq=dij**2
+                rijvec = rs[i, :] - rs[j, :]
+                rijvec = rijvec - np.around(rijvec)
+                rijsq = np.sum(rijvec**2)
+                dij = (sigi+self.diameters[j])/2
+                dijsq = dij**2
                 if rijsq < dijsq:
-                    rij=np.sqrt(rijsq)
-                    rijouter = np.outer(rijvec,rijvec)
+                    rij = np.sqrt(rijsq)
+                    rijouter = np.outer(rijvec, rijvec)
                     # U(r) = ½(1 - r/d)²
                     # d²U/dxdy = (dr/dx)(dr/dy)/d² - (1 - r/d)(d²r/dxdy)/d
                     # dr/dx = x/r
@@ -413,14 +437,14 @@ class Packing:
                     # d²r/dx² = -x² / r³ + 1/r
                     # d²U/dxᵢdxⱼ = -(xᵢ xⱼ)/(r² d²) + (1 - r/d)((xᵢ xⱼ)/r² - δᵢⱼ)/(d r)
                     
-                    Mij1=-rijouter/rijsq/dijsq
-                    Mij2=(1-rij/dij)*(rijouter/rijsq-np.eye(d))/rij/dij
-                    Mij=Mij1+Mij2
+                    Mij1 = -rijouter/rijsq/dijsq
+                    Mij2 = (1-rij/dij)*(rijouter/rijsq-np.eye(d))/rij/dij
+                    Mij = Mij1+Mij2
                     
-                    M[d*i:d*i+d,d*j:d*j+d]=Mij
-                    M[d*j:d*j+d,d*i:d*i+d]=Mij
-                    M[d*i:d*i+d,d*i:d*i+d]-=Mij
-                    M[d*j:d*j+d,d*j:d*j+d]-=Mij
+                    M[d*i:d*i+d, d*j:d*j+d] = Mij
+                    M[d*j:d*j+d, d*i:d*i+d] = Mij
+                    M[d*i:d*i+d, d*i:d*i+d] -= Mij
+                    M[d*j:d*j+d, d*j:d*j+d] -= Mij
         
         np.divide(M, self.L**2, out=M)
         if masses is None:
@@ -457,8 +481,8 @@ class Packing:
         dists = np.sqrt(np.sum(diffs**2, axis=0))
         sigij = np.add.outer(self.diameters, self.diameters)/2.
 
-        adj2 = np.triu(adj, k=1)
-        overlaps = (sigij - dists)[adj2]
+        # adj2 = np.triu(adj, k=1)
+        # overlaps = (sigij - dists)[adj2]
         
         dr = (1 - dists / sigij)
         with np.errstate(divide='ignore'):
@@ -473,4 +497,5 @@ class Packing:
         Requires `tess`.
         """
         import tess
-        return tess.Container(self.rs*self.L % self.L, limits=self.L, radii=self.sigmas/2., periodic=True)
+        return tess.Container(self.rs*self.L % self.L, limits=self.L,
+                              radii=self.diameters * self.L/2., periodic=True)

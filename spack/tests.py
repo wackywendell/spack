@@ -1,9 +1,9 @@
-from . import *
+from . import Packing
 from unittest import TestCase
 
-import numpy as np
-from numpy import sqrt, array
+from numpy import array
 from numpy.testing import assert_allclose
+
 
 class PackingTest3D(TestCase):
     def setUp(self):
