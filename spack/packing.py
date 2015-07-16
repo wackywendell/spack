@@ -250,8 +250,8 @@ class Packing:
         return psets**self.L, np.array(Vs)*(self.L**self.ndim)
     
     def scene(pack, cmap=None, rot=0, camera_height=0.7, camera_dist=1.5, angle=None,
-              lightstrength=1.1, orthographic=False, pad=None, floatercolor=(.6, .6, .6),
-              bgcolor=[1, 1, 1]):
+              lightstrength=1.1, orthographic=False, pad=None, floater_color=(.6, .6, .6),
+              bgcolor=(1, 1, 1), box_color=(.5, .5, .5)):
         """
         Render a 3D scene.
         
@@ -260,6 +260,8 @@ class Packing:
         Parameters
         ----------
         cmap : a colormap
+        box_color : Color to draw the box. 'None' => don't draw box.
+        floater_color : Color for floaters. 'None' => same color as non-floaters (use cmap).
         
         Returns
         -------
@@ -285,11 +287,11 @@ class Packing:
                                  " and cmap not recognizeable as a list")
             cols = list(cmap)
 
-        if floatercolor is not None:
+        if floater_color is not None:
             ix, _ = pack.backbone()
             ns, = np.nonzero(~ix)
             for n in ns:
-                cols[n] = floatercolor
+                cols[n] = floater_color
         rs = np.remainder(pack.rs+.5, 1)-.5
         spheres = [
             vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
@@ -304,9 +306,11 @@ class Packing:
                  if np.allclose(np.sum((c1-c2)**2), 1) and sum(c1-c2) > 0]
 
         radius = 0.01
-        col = vapory.Texture(vapory.Pigment('color', [.5, .5, .5]))
-        cyls = [vapory.Cylinder(c1, c2, 0.01, col) for c1, c2 in pairs]
-        caps = [vapory.Sphere(c, radius, col) for c in corners]
+        cyls, caps = [], []
+        if box_color is not None:
+            col = vapory.Texture(vapory.Pigment('color', box_color))
+            cyls = [vapory.Cylinder(c1, c2, 0.01, col) for c1, c2 in pairs]
+            caps = [vapory.Sphere(c, radius, col) for c in corners]
         
         light_locs = [
             [8., 5., -3.],
