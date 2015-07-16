@@ -2,6 +2,7 @@
 
 import numpy as np
 from math import sqrt
+from collections import namedtuple
 
 
 def rand_sphere(d0):
@@ -57,6 +58,8 @@ class Packing:
         elif self.ndim != 2:
             raise ValueError("Number of dimensions must be 2 or 3; got {}".format(self.ndim))
     
+    Neighbors = namedtuple('Neighbors', ('adjacency', 'diffs'))
+    
     def neighbors(self, tol=1e-8):
         """
         For a set of particles at xs,ys with diameters diameters, finds the
@@ -77,7 +80,9 @@ class Packing:
         sigmadists = np.add.outer(self.diameters, self.diameters)/2.
         dists = np.sqrt(np.sum(diffs**2, axis=0))
         
-        return dists - sigmadists < tol, diffs*self.L
+        return self.Neighbors(dists - sigmadists < tol, diffs*self.L)
+        
+    Backbone = namedtuple('Backbone', ('indices', 'adjacency'))
     
     def backbone(self, tol=1e-8):
         """Returns (backbone indices, neighbor matrix)"""
@@ -94,12 +99,17 @@ class Packing:
             notfloaters = np.sum(areneighbors, axis=0) >= self.ndim + 2
             oldNpack, Npack = Npack, np.sum(notfloaters)
         
-        return notfloaters, areneighbors
+        return self.Backbone(notfloaters, areneighbors)
+    
+    Contacts = namedtuple('Contacts', ('Nc', 'stable', 'floaters'))
     
     def contacts(self, tol=1e-8):
         """Returns (number of backbone contacts, stable number, number of floaters)"""
         idx, nbor = self.backbone(tol=tol)
-        return np.sum(np.triu(nbor, 1)), (np.sum(idx)-1) * self.ndim + 1, np.sum(~idx)
+        return self.Contacts(
+            np.sum(np.triu(nbor, 1)),
+            (np.sum(idx)-1) * self.ndim + 1,
+            np.sum(~idx))
     
     def size_indices(self, tol=1e-8):
         """Returns [idx of sigma1, idx of sigma2, ...]"""
