@@ -251,7 +251,8 @@ class Packing:
     
     def scene(pack, cmap=None, rot=0, camera_height=0.7, camera_dist=1.5, angle=None,
               lightstrength=1.1, orthographic=False, pad=None, floater_color=(.6, .6, .6),
-              bgcolor=(1, 1, 1), box_color=(.5, .5, .5), group_indexes=None):
+              bgcolor=(1, 1, 1), box_color=(.5, .5, .5),
+              group_indexes=None, clip=False):
         """
         Render a 3D scene.
         
@@ -264,6 +265,7 @@ class Packing:
         floater_color : Color for floaters. 'None' => same color as non-floaters (use cmap).
         group_indexes : a list of indexes for each "group" that should remain
                 together on the same side of the box.
+        clip : clip the spheres at the edge of the box.
         
         Returns
         -------
@@ -294,18 +296,41 @@ class Packing:
             ns, = np.nonzero(~ix)
             for n in ns:
                 cols[n] = floater_color
-        rs = np.remainder(pack.rs+.5, 1)-.5
+        
+        mod_add = .5 if not clip else 0.
+        rs = np.remainder(pack.rs+mod_add, 1)-mod_add
         if group_indexes is not None:
             for ix in group_indexes:
                 xs = pack.rs[ix, :]
                 com = np.mean(xs, axis=0)
-                comdiff = (np.remainder(com+.5, 1) - .5) - com
+                comdiff = (np.remainder(com+mod_add, 1) - mod_add) - com
                 rs[ix, :] = xs + comdiff
-                
-        spheres = [
-            vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
-            for xyz, s, col in zip(rs, pack.diameters, cols)
-        ]
+        
+        if clip:
+            spheres = []
+            cube = vapory.Box((-.5, -.5, -.5), (.5, .5, .5))
+            dxs = [-1., 0.]
+            drs = np.array([(dx, dy, dz) for dx in dxs for dy in dxs for dz in dxs])
+            maxr = 0
+            
+            for xyz, s, col in zip(rs, pack.diameters, cols):
+                for dr in drs:
+                    r = dr + xyz
+                    if np.any(abs(r) - s/2. > .5):
+                        # not in the box
+                        continue
+                    sphere = vapory.Sphere(r, s/2.)
+                    cutsphere = vapory.Intersection(cube, sphere,
+                        vapory.Texture(vapory.Pigment('color', col[:3])))
+                    spheres.append(cutsphere)
+                    if np.amax(r) > maxr:
+                        maxr = np.amax(r)
+        else:
+            spheres = [
+                vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
+                for xyz, s, col in zip(rs, pack.diameters, cols)
+            ]
+            maxr = np.amax(np.amax(np.abs(rs), axis=1) + pack.diameters/2.)
 
         extent = (-.5, .5)
         corners = [np.array((x, y, z)) for x in extent for y in extent for z in extent]
@@ -341,7 +366,7 @@ class Packing:
         if angle is None:
             if pad is None:
                 pad = max(pack.diameters)
-            w = sqrt(2)*np.amax(rs) + pad
+            w = sqrt(2)*maxr + pad
             angle = float(np.arctan2(w, 2*camera_dist))*2*180/np.pi
         camera = vapory.Camera('location', cloc, 'look_at', [0, 0, 0], 'angle', angle)
         # vapory.Camera('orthographic', 'location', cloc, 'direction',
