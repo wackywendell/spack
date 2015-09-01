@@ -302,11 +302,10 @@ class Packing:
                 comdiff = (np.remainder(com+.5, 1) - .5) - com
                 rs[ix, :] = xs + comdiff
                 
-            
         spheres = [
             vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
             for xyz, s, col in zip(rs, pack.diameters, cols)
-            ]
+        ]
 
         extent = (-.5, .5)
         corners = [np.array((x, y, z)) for x in extent for y in extent for z in extent]
@@ -327,14 +326,14 @@ class Packing:
             [-6., 6., -5.],
             [-6., -7., -4.],
             [10., -5., 7.]
-            ]
+        ]
         
         rotlocs = [[x*np.cos(rot) - z*np.sin(rot), y, z*np.cos(rot) + x*np.sin(rot)]
                    for x, y, z in light_locs]
         lights = [
             # vapory.LightSource( [2,3,5], 'color', [1,1,1] ),
             vapory.LightSource(loc, 'color', [lightstrength]*3) for loc in rotlocs
-            ]
+        ]
         cloc = [np.cos(rot)*camera_dist, camera_dist*camera_height, np.sin(rot)*camera_dist]
         # mag = sqrt(sum([d**2 for d in cloc]))
         # direction = [-v*2/mag for v in cloc]
