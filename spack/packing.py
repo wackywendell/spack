@@ -251,7 +251,7 @@ class Packing:
     
     def scene(pack, cmap=None, rot=0, camera_height=0.7, camera_dist=1.5, angle=None,
               lightstrength=1.1, orthographic=False, pad=None, floater_color=(.6, .6, .6),
-              bgcolor=(1, 1, 1), box_color=(.5, .5, .5)):
+              bgcolor=(1, 1, 1), box_color=(.5, .5, .5), group_indexes=None):
         """
         Render a 3D scene.
         
@@ -262,6 +262,8 @@ class Packing:
         cmap : a colormap
         box_color : Color to draw the box. 'None' => don't draw box.
         floater_color : Color for floaters. 'None' => same color as non-floaters (use cmap).
+        group_indexes : a list of indexes for each "group" that should remain
+                together on the same side of the box.
         
         Returns
         -------
@@ -293,6 +295,14 @@ class Packing:
             for n in ns:
                 cols[n] = floater_color
         rs = np.remainder(pack.rs+.5, 1)-.5
+        if group_indexes is not None:
+            for ix in group_indexes:
+                xs = pack.rs[ix, :]
+                com = np.mean(xs, axis=0)
+                comdiff = (np.remainder(com+.5, 1) - .5) - com
+                rs[ix, :] = xs + comdiff
+                
+            
         spheres = [
             vapory.Sphere(xyz, s/2., vapory.Texture(vapory.Pigment('color', col[:3])))
             for xyz, s, col in zip(rs, pack.diameters, cols)
@@ -332,7 +342,7 @@ class Packing:
         if angle is None:
             if pad is None:
                 pad = max(pack.diameters)
-            w = sqrt(2) + pad
+            w = sqrt(2)*np.amax(rs) + pad
             angle = float(np.arctan2(w, 2*camera_dist))*2*180/np.pi
         camera = vapory.Camera('location', cloc, 'look_at', [0, 0, 0], 'angle', angle)
         # vapory.Camera('orthographic', 'location', cloc, 'direction',
