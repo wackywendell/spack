@@ -149,18 +149,67 @@ class Packing:
         assert(len(sz2) == 2)
         cutoff2 = int(np.sum(sz2[0]))
 
-        vs1 = [sim.Vec(*xy) for idx in sz1 for xy in self.rs[idx]]
-        vs2 = [sim.Vec(*xy) for idx in sz2 for xy in other.rs[idx]]
+        vs1 = np.array([xy for idx in sz1 for xy in self.rs[idx]])
+        vs2 = np.array([xy for idx in sz2 for xy in other.rs[idx]])
 
-        tree = sim.jammingtreeBD(
-            box, sim.vecvector(vs1), sim.vecvector(vs2), cutoff1, cutoff2)
+        tree = sim.JammingTreeBD(box, vs1, vs2, cutoff1, cutoff2)
         return tree
 
     def dist(self, other, tol=1e-8, maxt=1000000):
+        """Returns the distance between two packings, with the particles
+        paired up in the most efficient way, and also with center-of-mass
+        accounted for.
+        """
         tree = self.dist_tree(other, tol=tol)
         tree.expand(maxt)
-        return sqrt(tree.curbest().distsq) * self.L
-
+        return sqrt(tree.current_best().distance_squared * self.L * other.L)
+    
+    def paired_dists(self, other, match_com=True):
+        """
+        Returns the distance between two packings, assuming particle 1
+        of packing 1 goes with particle 2 of packing 2.
+        
+        Distance is calculated as
+        :math:`d = \sqrt{\sum_i \left(\vec r_i \ominus_\vec{L} \vec s_i
+            \right)^2`, where
+        :math:`\vec r_i` are the particles from one packing,
+        :math:`\vec s_i` are the particles from the other packing,
+        and :math:`\ominus_\vec{L}` means "shortest distance given periodic
+        boundary conditions in a box of shape :math:`\vec{L}`".
+        
+        Parameters
+        ----------
+        other : Another :class:`Packing`.
+        match_com : Subtract off center-of-mass motion as well.
+        
+        Notes
+        -----
+        
+        For `match_com = True`, this yields
+        
+        :math:`d = \sqrt{\sum_i \left(\vec{r}_{i} \ominus_\vec{L} \vec{s}_{i} -
+            \vec{\delta}\right)^2}`
+        
+        Minimized over `\vec delta`. It does this by actually evaluating
+        
+        :math:`d = \sqrt{\frac{1}{N}\sum_{\left\langle i,j\right\rangle
+            }\left(\vec{r}_{ij} \ominus_\vec{L} \vec{s}_{ij}\right)^2}`,
+            
+        which turns out to be equivalent.
+        """
+        assert self.ndim == other.ndim
+        if match_com:
+            dists1 = (self.rs[..., np.newaxis] - self.rs.T[np.newaxis, ...])
+            dists2 = (other.rs[..., np.newaxis] - other.rs.T[np.newaxis, ...])
+            rij_minus_sij = np.rollaxis(dists1 - dists2, -1, -2)
+            rij_minus_sij = ((rij_minus_sij + 1/2.) % 1) - 1/2.
+            dist_sqs = np.triu(np.sum(rij_minus_sij**2, axis=-1))
+            return np.sqrt(np.sum(dist_sqs) * self.L * other.L / len(self.rs))
+        else:
+            diffs = self.rs - other.rs
+            diffs = ((diffs + 1/2.) % 1) - 1/2.
+            return np.sqrt(np.sum(diffs**2) * self.L * other.L)
+        
     @staticmethod
     def _cage_pts(xyz, neighbor_xyzs, sigma, neighbor_diameters, L, M, R):
         """Finds points within a distance R of point xyz that do not conflict with neigbors"""
