@@ -11,6 +11,7 @@ First, we import our modules:
 
     import spack
     from math import pi
+
 Now we put in some data.
 
 The data below is from a simple packing I made using ``pyparm.packmin``.
@@ -29,11 +30,13 @@ Normally you'd load your own data from a file.
             [ 1.07636871,  2.1942971 ,  0.63752152],
             [ 0.49922725,  1.20002224,  1.13360082],
             [-0.27724757,  1.62152603,  1.67262247]]
+
 Now we make the packing:
 
 .. code:: python
 
     pack = spack.Packing(locs, diameters, L=L)
+
 What does it look like?
 
 .. code:: python
@@ -41,6 +44,7 @@ What does it look like?
     size = 400
     sc = pack.scene(rot=pi/4, camera_dist=2, cmap='autumn', bgcolor=[1,1,1])
     sc.render('ipython', width=size, height=size, antialiasing=0.001)
+
 
 
 
@@ -63,12 +67,14 @@ Let's make a movie!
                     .render(width=size, height=size, antialiasing=0.001)
                 )
     vc = VideoClip(make_frame, duration=duration)
+
 Write the movie to file. This takes about 10 minutes on my machine to
 render all 240 frames, but it does give you some pretty spiffy output.
 
 .. code:: python
 
     vc.write_gif("example-packing.gif",fps=24)
+
 
 .. parsed-literal::
 
@@ -84,6 +90,7 @@ And display the movie, in an ipython notebook.
 
     from IPython.display import Image
     Image(url="example-packing.gif")
+
 
 
 

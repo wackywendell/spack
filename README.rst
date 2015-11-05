@@ -63,7 +63,7 @@ Make a :class:`~spack.Packing`:
 How many contacts are in my packing?
 
     >>> pack.contacts()
-    (25, 25, 0)
+    Contacts(Nc=25, stable=25, floaters=0)
     >>> # 25 contacts found
     >>> # 25 contacts required for stability (for a packing of 9 particles)
     >>> # 0 floaters
