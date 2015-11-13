@@ -61,6 +61,11 @@ class Packing:
             raise ValueError(
                 "Number of dimensions must be 2 or 3; got {}".format(self.ndim))
 
+    @property
+    def phi(self):
+        """Volume of the spheres in the box."""
+        return (np.sum(self.diameters**self.ndim)*np.pi / (2*self.ndim))
+
     Neighbors = namedtuple('Neighbors', ('adjacency', 'diffs'))
 
     def neighbors(self, tol=1e-8):
@@ -454,7 +459,7 @@ class Packing:
 
         if color == 'diameter':
             dset = sorted(set(self.diameters))
-            cold = dict(zip(dset, cycle(mpl.rcParams['axes.color_cycle'])))
+            cold = dict(zip(dset, cycle([d['color'] for d in mpl.rcParams['axes.prop_cycle']])))
             color = [cold[d] for d in self.diameters]
         if not np.iterable(color):
             color = cycle((color,))
@@ -465,18 +470,21 @@ class Packing:
         # rs = np.remainder(self.rs+.5, 1)-.5
         L = self.L
         dloc = (0, 1)
+        circs = []
         for (x0, y0), d, c in zip(self.rs, self.diameters, color):
             for x, y in [np.array((x0 + dx, y0 + dy)) for dx in dloc for dy in dloc]:
                 if (x + d > 0 and x - d < 1 and y + d > 0 and y - d < 1):
                     circ = mpl.patches.Circle((x * L, y * L), d * L / 2,
                                               axes=ax, ec='none', fc=c, alpha=alpha)
                     ax.add_patch(circ)
+                    circs.append(circ)
 
         if reshape:
             ax.axis([0, L, 0, L])
             ax.set_aspect('equal')
             ax.set_xticks([], [])
             ax.set_yticks([], [])
+        return circs
 
     def plot_contacts(self, ax=None, tol=0, reshape=True, **kw):
         """Designed for use with plot_disks, this will plot a line between neighboring particles."""
