@@ -6,7 +6,7 @@ spack
 
 .. _Code available: https://github.com/wackywendell/spack
 
-.. _documentation: https://spack.readthedocs.org
+.. _documentation: https://pyspack.readthedocs.org
 
 A 2D or 3D sphere packing analysis package
 ------------------------------------------
