@@ -5,22 +5,22 @@ Spack
     :target: https://travis-ci.org/wackywendell/spack
     :alt: Build Status
 
-.. image:: https://readthedocs.org/projects/spack/badge/?version=latest
-    :target: https://spack.readthedocs.org
+.. image:: https://readthedocs.org/projects/pyspack/badge/?version=latest
+    :target: https://pyspack.readthedocs.org
     :alt: Documentation
 
 
-`Code available`_ on Github, and `documentation`_ at Read the Docs. 
+`Code available`_ on Github, and `documentation`_ at Read the Docs.
 
 .. _Code available: https://github.com/wackywendell/spack
 
-.. _documentation: https://spack.readthedocs.org
+.. _documentation: https://pyspack.readthedocs.org
 
 A 2D or 3D sphere packing analysis package
 ------------------------------------------
 
 This package exists to enable fast, simple, and easy analysis of packings of spheres (3D) and
-disks (2D). It was developed for use in a Granular Materials lab, so some of the methods reflect 
+disks (2D). It was developed for use in a Granular Materials lab, so some of the methods reflect
 that.
 
 Installation
@@ -34,9 +34,9 @@ To install, use ``pip`` (or ``easy_install``)::
     pip install --user spack
 
 Or to install from Github_::
-    
+
     pip install --user git+git://github.com/wackywendell/spack@master
-    
+
 .. _github: https://www.github.com/wackywendell/tess
 
 
@@ -69,7 +69,7 @@ How many contacts are in my packing?
     >>> # 0 floaters
 
 What are its highest resonant frequencies?
-    
+
     >>> freqs = pack.DM_freqs()
     >>> for f in reversed(sorted(freqs)[-4:]):
     ...     print('{:.4f}'.format(f))
@@ -88,35 +88,35 @@ Colors indicate diameter, with floaters drawn in gray.
 
 .. image:: example-packing.png
     :align: center
-    :alt: 
+    :alt:
 .. image:: docs/example-packing.png
     :align: center
-    :alt: 
+    :alt:
 
 Let's look at all sides, using `moviepy`:
 
     >>> from moviepy.editor import VideoClip
     >>> import moviepy.editor as mpy
-    >>> 
+    >>>
     >>> duration = 10
     >>> def make_frame(t):
     ...     return (
-    ...                 pack.scene(rot=(t/duration + .125)*2.*pi, 
+    ...                 pack.scene(rot=(t/duration + .125)*2.*pi,
     ...                            camera_dist=2, cmap='autumn', bgcolor=[1,1,1])
     ...                 .render(width=size, height=size, antialiasing=0.001)
     ...             )
     >>> vc = VideoClip(make_frame, duration=duration)
-    >>> 
+    >>>
     >>> vc.write_gif("example-packing.gif",fps=24) # doctest: +SKIP
 
 And this is the output:
 
 .. image:: example-packing.gif
     :align: center
-    :alt: 
+    :alt:
 .. image:: docs/example-packing.gif
     :align: center
-    :alt: 
+    :alt:
 
 There are a few other methods for things like finding the backbone of the packing (:meth:`~.Packing.backbone`), the adjacency matrix (:meth:`~.Packing.neighbors`), or getting the Voronoi tessellation (:meth:`~.Packing.tess`, requires `tess`_). See the :doc:`api` for more details.
 
